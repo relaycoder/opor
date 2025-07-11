@@ -1,4 +1,7 @@
-import type { DB, Changeset } from '@vlcn.io/client-crsqlite';
+import type { DB } from '@vlcn.io/crsqlite-wasm';
+import type Changeset from '@vlcn.io/crsqlite-wasm';
+
+export type { Changeset };
 import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy';
 
 // --- PUBLIC TYPES ---

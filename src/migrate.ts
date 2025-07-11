@@ -1,4 +1,6 @@
-import { migrate as drizzleMigrate } from 'drizzle-orm/sqlite-proxy';
+import { SQLiteAsyncDialect } from 'drizzle-orm/sqlite-core';
+import { readMigrationFiles } from 'drizzle-orm/migrator';
+import type { MigrationMeta } from 'drizzle-orm/migrator';
 import type { OporDatabase } from './types';
 
 type MigrationConfig = {
@@ -12,10 +14,10 @@ type MigrationConfig = {
  * @param db The Opor database instance.
  * @param config Configuration for the migrations.
  */
-export function migrate<TSchema extends Record<string, unknown>>(
+export async function migrate<TSchema extends Record<string, unknown>>(
   db: OporDatabase<TSchema>,
   config: MigrationConfig
 ): Promise<void> {
-  // OporDatabase is compatible with Drizzle's migrator.
-  return drizzleMigrate(db, config);
+  const dialect = new SQLiteAsyncDialect();
+  await dialect.migrate(readMigrationFiles(config), db.session);
 }

@@ -1,13 +1,13 @@
-import type { DB } from '@vlcn.io/client-crsqlite';
+import type { DB } from '@vlcn.io/crsqlite-wasm';
 import type { DrizzleConfig } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/sqlite-proxy';
 import {
   applyChangeset as oporApplyChangeset,
   getChangeset as oporGetChangeset,
   sync as oporSync,
-} from './sync';
-import { createLiveQuery, createProxy } from './live-query';
-import type { OporClient, OporDatabase, QueryBuilder } from './types';
+} from './sync.js';
+import { createLiveQuery, createProxy } from './live-query.js';
+import type { OporClient, OporDatabase, QueryBuilder } from './types.js';
 
 type OporConfig<TSchema extends Record<string, unknown>> = DrizzleConfig<TSchema>;
 
@@ -35,17 +35,23 @@ export function createLiveDB<TSchema extends Record<string, unknown>>(
   const drizzleDb = drizzle(proxy, config);
   client.drizzle = drizzleDb;
 
-  const onTablesChanged = (modified: [table: string, op: "insert" | "update" | "delete", rowid: number][]) => {
-    const changedTables = new Set(modified.map(([table]) => table.toLowerCase()));
-    
+  const onTablesChanged = (
+    _type: any,
+    _dbName: string,
+    tableName: string
+  ) => {
+    const changedTables = new Set([tableName.toLowerCase()]);
+
     for (const query of client.liveQueries.values()) {
-      const hasOverlap = [...query.tableDeps].some(dep => changedTables.has(dep));
+      const hasOverlap = [...query.tableDeps].some((dep) =>
+        changedTables.has(dep)
+      );
       if (hasOverlap) {
         query.refetch();
       }
     }
   };
-  
+
   client.tableListener = client.crSqlite.onUpdate(onTablesChanged);
 
   const db: OporDatabase<TSchema> = {

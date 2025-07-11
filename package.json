@@ -32,7 +32,7 @@
   },
   "peerDependencies": {
     "react": ">=18.2.0",
-    "@vlcn.io/crsqlite-wasm": ">=0.19.0",
+    "@vlcn.io/crsqlite-wasm": "^0.16.0",
     "drizzle-orm": ">=0.30.0"
   },
   "peerDependenciesMeta": {

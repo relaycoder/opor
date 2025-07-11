@@ -20,7 +20,9 @@ const extractTableNames = (sql: string): Set<string> => {
     /\b(?:from|join|update|into|delete\s+from)\s+`?([a-zA-Z0-9_]+)`?/gi;
   let match;
   while ((match = regex.exec(sql)) !== null) {
-    tables.add(match[1].toLowerCase());
+    if (match[1]) {
+      tables.add(match[1].toLowerCase());
+    }
   }
   return tables;
 };
@@ -39,7 +41,10 @@ export const createProxy = (client: OporClient) => {
     }
 
     try {
-      const rows = await client.crSqlite.exec(sql, params, method);
+      // Drizzle expects a `{ rows: ... }` object for remote drivers.
+      // For 'run' method, it expects `{ rows: [] }` but we can return what we get.
+      const result = await (method === 'all' || method === 'get' ? client.crSqlite.execO(sql, params) : client.crSqlite.exec(sql, params));
+      const rows = result === undefined ? [] : result;
       return { rows };
     } catch (e) {
       console.error('Error executing query:', e, { sql, params });
@@ -62,11 +67,14 @@ export function createLiveQuery<TSchema extends Record<string, unknown>, TResult
     refetch: async () => {}, // assigned right after
     destroy: () => {}, // assigned right after
     updateState: (update) => {
-      Object.assign(internalQuery.result, update);
+      if (internalQuery.result) {
+        Object.assign(internalQuery.result, update);
+      }
     },
   };
 
   const notifySubscribers = () => {
+    if (!internalQuery.result) return;
     for (const sub of internalQuery.subscribers) {
       if (internalQuery.result.data !== undefined) {
         sub(internalQuery.result.data);
@@ -76,7 +84,7 @@ export function createLiveQuery<TSchema extends Record<string, unknown>, TResult
 
   const refetch = async () => {
     internalQuery.updateState({ loading: true });
-    
+
     // If this is the first run, we need to collect table dependencies.
     const isFirstRun = internalQuery.tableDeps.size === 0;
     if (isFirstRun) {
@@ -85,7 +93,7 @@ export function createLiveQuery<TSchema extends Record<string, unknown>, TResult
 
     try {
       const newData = await internalQuery.builder(client.drizzle);
-      if (!deepEqual(internalQuery.result.data, newData)) {
+      if (!internalQuery.result || !deepEqual(internalQuery.result.data, newData)) {
         internalQuery.updateState({ data: newData });
         notifySubscribers();
       }
