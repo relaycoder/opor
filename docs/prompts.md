@@ -1,4 +1,11 @@
+lets finish opor based on readme.md. make sure;
 
+1. production ready
+2. public api facing ready
+3. use HOF, no class, no oop
+4. no usage of type any and unknown even casting as
+
+dont forget final check yaml!
 
 ===
 

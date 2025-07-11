@@ -1,0 +1,67 @@
+import type { DB } from '@vlcn.io/client-crsqlite';
+import type { DrizzleConfig } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/sqlite-proxy';
+import {
+  applyChangeset as oporApplyChangeset,
+  getChangeset as oporGetChangeset,
+  sync as oporSync,
+} from './sync';
+import { createLiveQuery, createProxy } from './live-query';
+import type { OporClient, OporDatabase, QueryBuilder } from './types';
+
+type OporConfig<TSchema extends Record<string, unknown>> = DrizzleConfig<TSchema>;
+
+/**
+ * Creates a reactive, local-first database powered by Opor and CR-SQLite.
+ *
+ * @param crSqliteDb The database instance from `@vlcn.io/crsqlite-wasm`.
+ * @param config The Drizzle config, including your schema.
+ * @returns An OporDatabase instance.
+ */
+export function createLiveDB<TSchema extends Record<string, unknown>>(
+  crSqliteDb: DB,
+  config: OporConfig<TSchema>
+): OporDatabase<TSchema> {
+  const client: OporClient = {
+    crSqlite: crSqliteDb,
+    drizzle: undefined as any, // assigned below
+    schema: config.schema ?? {},
+    liveQueries: new Map(),
+    queryIdCounter: 0,
+    tableListener: () => {},
+  };
+
+  const proxy = createProxy(client);
+  const drizzleDb = drizzle(proxy, config);
+  client.drizzle = drizzleDb;
+
+  const onTablesChanged = (modified: [table: string, op: "insert" | "update" | "delete", rowid: number][]) => {
+    const changedTables = new Set(modified.map(([table]) => table.toLowerCase()));
+    
+    for (const query of client.liveQueries.values()) {
+      const hasOverlap = [...query.tableDeps].some(dep => changedTables.has(dep));
+      if (hasOverlap) {
+        query.refetch();
+      }
+    }
+  };
+  
+  client.tableListener = client.crSqlite.onUpdate(onTablesChanged);
+
+  const db: OporDatabase<TSchema> = {
+    ...drizzleDb,
+    crSqlite: client.crSqlite,
+
+    liveQuery: <TResult>(builder: QueryBuilder<TSchema, TResult>) => {
+      return createLiveQuery(client, builder);
+    },
+
+    sync: (options) => oporSync(client, options),
+
+    getChangeset: () => oporGetChangeset(client),
+
+    applyChangeset: (changeset) => oporApplyChangeset(client, changeset),
+  };
+
+  return db;
+}
