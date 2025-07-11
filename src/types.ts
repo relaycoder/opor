@@ -1,5 +1,6 @@
 import type { DB } from '@vlcn.io/crsqlite-wasm';
-import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy';
+import type { BaseSQLiteDatabase } from 'drizzle-orm/sqlite-core';
+import type { CRSQLiteSession } from './session.js';
 
 // Define a proper Changeset type based on the CR-SQLite API structure
 export type Changeset = [
@@ -24,7 +25,7 @@ export type QueryBuilder<
   TSchema extends Record<string, unknown>,
   TResult
 > = (
-  db: SqliteRemoteDatabase<TSchema>
+  db: BaseSQLiteDatabase<'async', any, TSchema>
 ) => Promise<TResult>;
 
 /**
@@ -58,8 +59,12 @@ export type LiveResult<TData> = {
  * It's a Drizzle database instance augmented with reactive and sync capabilities.
  */
 export type OporDatabase<TSchema extends Record<string, unknown>> =
-  SqliteRemoteDatabase<TSchema> & {
-    session: SqliteRemoteDatabase<TSchema>;
+  BaseSQLiteDatabase<'async', any, TSchema> & {
+    /**
+     * The internal Drizzle session. Not meant for public use.
+     * @internal
+     */
+    session: CRSQLiteSession<any, any>;
     /**
      * Creates a reactive "live" query.
      * The query will automatically update when its underlying data changes.
@@ -95,7 +100,7 @@ export type OporDatabase<TSchema extends Record<string, unknown>> =
      * The raw CR-SQLite database instance from `@vlcn.io/client-crsqlite`.
      * Use this for advanced, direct database access if needed.
      */
-    readonly crSqlite: DB;
+    crSqlite: DB;
   };
 
 /**
@@ -131,7 +136,7 @@ export type LiveQuery<TData> = {
  */
 export type OporClient = {
   crSqlite: DB;
-  drizzle: SqliteRemoteDatabase<any>;
+  drizzle: OporDatabase<any>;
   schema: Record<string, unknown>;
   liveQueries: Map<number, LiveQuery<any>>;
   queryIdCounter: number;

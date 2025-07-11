@@ -7,14 +7,14 @@ import type {
   OporClient,
 } from './types';
 
-let currentTableCollector: Set<string> | null = null;
+export let currentTableCollector: Set<string> | null = null;
 
 /**
  * A simple SQL parser to extract table names from a query.
  * This is not foolproof but works for most common queries.
  * It looks for table names after FROM, JOIN, UPDATE, INSERT INTO, DELETE FROM.
  */
-const extractTableNames = (sql: string): Set<string> => {
+export const extractTableNames = (sql: string): Set<string> => {
   const tables = new Set<string>();
   const regex =
     /\b(?:from|join|update|into|delete\s+from)\s+`?([a-zA-Z0-9_]+)`?/gi;
@@ -27,31 +27,7 @@ const extractTableNames = (sql: string): Set<string> => {
   return tables;
 };
 
-export const createProxy = (client: OporClient) => {
-  return async (
-    sql: string,
-    params: any[],
-    method: 'run' | 'all' | 'values' | 'get'
-  ) => {
-    if (currentTableCollector) {
-      const tables = extractTableNames(sql);
-      for (const table of tables) {
-        currentTableCollector.add(table);
-      }
-    }
-
-    try {
-      // Drizzle expects a `{ rows: ... }` object for remote drivers.
-      // For 'run' method, it expects `{ rows: [] }` but we can return what we get.
-      const result = await (method === 'all' || method === 'get' ? client.crSqlite.execO(sql, params) : client.crSqlite.exec(sql, params));
-      const rows = result === undefined ? [] : result;
-      return { rows };
-    } catch (e) {
-      console.error('Error executing query:', e, { sql, params });
-      throw e;
-    }
-  };
-};
+// The proxy is no longer needed with the custom driver.
 
 export function createLiveQuery<TSchema extends Record<string, unknown>, TResult>(
   client: OporClient,

@@ -1,9 +1,9 @@
-export { createLiveDB } from './db';
-export { migrate } from './migrate';
+export { createLiveDB } from './driver.js';
+export { migrate } from './migrator.js';
 
 export type {
   OporDatabase,
   LiveResult,
   QueryBuilder,
   SyncOptions,
-} from './types';
+} from './types.js';

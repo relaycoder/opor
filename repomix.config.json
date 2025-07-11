@@ -23,9 +23,7 @@
     }
   },
   "include": [
-    "package.json",
-    "tsconfig.json",
-    "README.md"
+    "node_modules/@vlcn.io/crsqlite-wasm/src/index.ts"
   ],
   "ignore": {
     "useGitignore": true,
