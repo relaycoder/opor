@@ -1,8 +1,17 @@
 import type { DB } from '@vlcn.io/crsqlite-wasm';
 import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy';
 
-// Define a more specific Changeset type
-export type Changeset = any[];
+// Define a proper Changeset type based on the CR-SQLite API structure
+export type Changeset = [
+  string,    // table name
+  string,    // pk
+  bigint,    // version
+  bigint,    // site id
+  number,    // cl
+  number,    // seq
+  string,    // col name
+  string     // value
+][];
 
 // --- PUBLIC TYPES ---
 
@@ -137,7 +146,7 @@ export const jsonStringifyWithBigInt = (obj: any): string => {
 };
 
 // Helper to deserialize BigInts in JSON
-export const jsonParseWithBigInt = (json: string): any[] => {
+export const jsonParseWithBigInt = (json: string): Changeset => {
   return JSON.parse(json, (_, value) => {
     if (typeof value === 'string' && value.startsWith('BIGINT::')) {
       return BigInt(value.substring(8));

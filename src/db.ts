@@ -7,7 +7,7 @@ import {
   sync as oporSync,
 } from './sync.js';
 import { createLiveQuery, createProxy } from './live-query.js';
-import type { OporClient, OporDatabase, QueryBuilder } from './types.js';
+import type { OporClient, OporDatabase, QueryBuilder, SyncOptions } from './types.js';
 
 type OporConfig<TSchema extends Record<string, unknown>> = DrizzleConfig<TSchema>;
 
@@ -54,7 +54,8 @@ export function createLiveDB<TSchema extends Record<string, unknown>>(
 
   client.tableListener = client.crSqlite.onUpdate(onTablesChanged);
 
-  const db: OporDatabase<TSchema> = {
+  // Create a type-safe database object that extends the Drizzle database
+  const db = {
     ...drizzleDb,
     session: drizzleDb,
     crSqlite: client.crSqlite,
@@ -63,12 +64,13 @@ export function createLiveDB<TSchema extends Record<string, unknown>>(
       return createLiveQuery(client, builder);
     },
 
-    sync: (options) => oporSync(client, options),
+    sync: (options: SyncOptions) => oporSync(client, options),
 
     getChangeset: () => oporGetChangeset(client),
 
-    applyChangeset: (changeset) => oporApplyChangeset(client, changeset),
-  } as OporDatabase<TSchema>;
+    applyChangeset: (changeset: string) => oporApplyChangeset(client, changeset),
+  };
 
-  return db;
+  // Return the database with the correct type
+  return db as OporDatabase<TSchema>;
 }

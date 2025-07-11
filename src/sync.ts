@@ -1,9 +1,19 @@
-import type { OporClient, SyncOptions } from './types';
+import type { DB } from '@vlcn.io/crsqlite-wasm';
+import type { OporClient, SyncOptions, Changeset } from './types';
 import { jsonParseWithBigInt, jsonStringifyWithBigInt } from './types';
+
+// Define the extended DB interface with the CR-SQLite sync methods
+interface ExtendedDB extends DB {
+  sync(options: SyncOptions): Promise<void>;
+  pullChanges(version: bigint): Promise<Changeset>;
+  applyChanges(changes: Changeset): Promise<void>;
+}
 
 export function sync(client: OporClient, options: SyncOptions): Promise<void> {
   // The `sync` method on the crSqlite instance handles everything.
-  return (client.crSqlite as any).sync(options);
+  // We need to cast to ExtendedDB because the CR-SQLite type definitions don't include these methods
+  const db = client.crSqlite as unknown as ExtendedDB;
+  return db.sync(options);
 }
 
 /**
@@ -13,7 +23,8 @@ export function sync(client: OporClient, options: SyncOptions): Promise<void> {
 export async function getChangeset(client: OporClient): Promise<string> {
   // `pullChanges` is designed for this peer-to-peer, manual sync model.
   // We pass 0n as the version to get all changes from the beginning of time.
-  const changes = await (client.crSqlite as any).pullChanges(0n);
+  const db = client.crSqlite as unknown as ExtendedDB;
+  const changes = await db.pullChanges(0n);
   return jsonStringifyWithBigInt(changes);
 }
 
@@ -34,6 +45,7 @@ export async function applyChangeset(
       'Invalid changeset format. Expected a JSON array of change tuples.'
     );
   }
-  // The type assertion is safe due to the check above.
-  await (client.crSqlite as any).applyChanges(changes);
+  // Apply the changes using the CR-SQLite API
+  const db = client.crSqlite as unknown as ExtendedDB;
+  await db.applyChanges(changes);
 }
