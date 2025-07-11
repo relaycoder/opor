@@ -50,6 +50,7 @@ export type LiveResult<TData> = {
  */
 export type OporDatabase<TSchema extends Record<string, unknown>> =
   SqliteRemoteDatabase<TSchema> & {
+    session: SqliteRemoteDatabase<TSchema>;
     /**
      * Creates a reactive "live" query.
      * The query will automatically update when its underlying data changes.

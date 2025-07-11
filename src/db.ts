@@ -56,6 +56,7 @@ export function createLiveDB<TSchema extends Record<string, unknown>>(
 
   const db: OporDatabase<TSchema> = {
     ...drizzleDb,
+    session: drizzleDb,
     crSqlite: client.crSqlite,
 
     liveQuery: <TResult>(builder: QueryBuilder<TSchema, TResult>) => {
