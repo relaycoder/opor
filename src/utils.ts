@@ -25,7 +25,7 @@ export function deepEqual(a: any, b: any): boolean {
 
     for (i = length; i-- > 0; ) {
       const key = keys[i];
-      if (!Object.prototype.hasOwnProperty.call(b, key) || !deepEqual(a[key], b[key]))
+      if (key && (!Object.prototype.hasOwnProperty.call(b, key) || !deepEqual(a[key], b[key])))
         return false;
     }
 

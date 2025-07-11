@@ -68,7 +68,7 @@ export function createLiveDB<TSchema extends Record<string, unknown>>(
     getChangeset: () => oporGetChangeset(client),
 
     applyChangeset: (changeset) => oporApplyChangeset(client, changeset),
-  };
+  } as OporDatabase<TSchema>;
 
   return db;
 }

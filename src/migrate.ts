@@ -1,6 +1,5 @@
 import { SQLiteAsyncDialect } from 'drizzle-orm/sqlite-core';
 import { readMigrationFiles } from 'drizzle-orm/migrator';
-import type { MigrationMeta } from 'drizzle-orm/migrator';
 import type { OporDatabase } from './types';
 
 type MigrationConfig = {
@@ -19,5 +18,5 @@ export async function migrate<TSchema extends Record<string, unknown>>(
   config: MigrationConfig
 ): Promise<void> {
   const dialect = new SQLiteAsyncDialect();
-  await dialect.migrate(readMigrationFiles(config), db.session);
+  await dialect.migrate(readMigrationFiles(config), db.session as any);
 }

@@ -1,9 +1,9 @@
-import type { OporClient, SyncOptions, Changeset } from './types';
+import type { OporClient, SyncOptions } from './types';
 import { jsonParseWithBigInt, jsonStringifyWithBigInt } from './types';
 
 export function sync(client: OporClient, options: SyncOptions): Promise<void> {
   // The `sync` method on the crSqlite instance handles everything.
-  return client.crSqlite.sync(options);
+  return (client.crSqlite as any).sync(options);
 }
 
 /**
@@ -13,7 +13,7 @@ export function sync(client: OporClient, options: SyncOptions): Promise<void> {
 export async function getChangeset(client: OporClient): Promise<string> {
   // `pullChanges` is designed for this peer-to-peer, manual sync model.
   // We pass 0n as the version to get all changes from the beginning of time.
-  const changes = await client.crSqlite.pullChanges(0n);
+  const changes = await (client.crSqlite as any).pullChanges(0n);
   return jsonStringifyWithBigInt(changes);
 }
 
@@ -35,5 +35,5 @@ export async function applyChangeset(
     );
   }
   // The type assertion is safe due to the check above.
-  await client.crSqlite.applyChanges(changes as Changeset[]);
+  await (client.crSqlite as any).applyChanges(changes);
 }
