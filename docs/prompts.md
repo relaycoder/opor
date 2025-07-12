@@ -1,3 +1,7 @@
+refactor codebase to use HOF no classes without causing fail tests
+
+===
+
 1. implement docs/test.plan.md in  test/e2e/[categories]/*.test.ts files, test/integration/[categories]/*.test.ts files, test/unit/[categories]/*.test.ts files,  test/test.util.ts
 2. Test cases should be isolated and clean no left over even on sigterm
 3. Test should use bun:test describe,it,afterAll,beforeAll,afterEach,beforeEach without mock
@@ -15,6 +19,10 @@ use another lib than @vlcn.io because it problematioc, like bun wasm in window c
 A good replacement would be absurd-sql with sql.js, which can be enhanced with sql.js-httpvfs for better performanc
 
 please do not use any, unknown or custom declaration
+
+===
+
+create the test plan items with `it should` language to docs/test.plan.md with content of separated list in test/e2e/[categories]/itemList test/integration/[categories]/itemList test/unit/[categories]/itemList
 
 ===
 lets finish opor based on readme.md. make sure;
