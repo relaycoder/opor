@@ -1,9 +1,13 @@
-import { describe, it, expect, beforeEach } from 'bun:test';
-import { createTestDB, testSchema, users } from '../../test.util';
+import { describe, it, expect, beforeEach, beforeAll } from 'bun:test';
+import { createTestDB, testSchema, users, initCRSQLite } from '../../test.util';
 import type { OporDatabase } from '../../../src/types';
 
 let db: OporDatabase<typeof testSchema>;
 let db2: OporDatabase<typeof testSchema>;
+
+beforeAll(async () => {
+    await initCRSQLite();
+});
 
 beforeEach(async () => {
   db = await createTestDB({dbName: 'db1.db'});
@@ -40,7 +44,7 @@ describe('Snapshot Sync', () => {
 
     usersInDb2 = await db2.select().from(users);
     expect(usersInDb2.length).toBe(1);
-    expect(usersInDb2[0].name).toBe('Alice');
+    expect(usersInDb2[0]!.name).toBe('Alice');
   });
 
   it('should throw an error when applying an invalid or corrupt changeset', async () => {
@@ -62,7 +66,7 @@ describe('Snapshot Sync', () => {
 
     const usersInDb2 = await db2.select().from(users).orderBy(users.name);
     expect(usersInDb2.length).toBe(2);
-    expect(usersInDb2[0].name).toBe('Alice');
-    expect(usersInDb2[1].name).toBe('Bob');
+    expect(usersInDb2[0]!.name).toBe('Alice');
+    expect(usersInDb2[1]!.name).toBe('Bob');
   });
 });

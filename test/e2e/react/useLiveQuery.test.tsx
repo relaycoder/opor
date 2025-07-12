@@ -1,14 +1,15 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'bun:test';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, spyOn } from 'bun:test';
 import { JSDOM } from 'jsdom';
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import { render, screen, act, cleanup } from '@testing-library/react';
 import { useLiveQuery } from '../../../src/react';
-import { createTestDB, testSchema, users } from '../../test.util';
+import { createTestDB, testSchema, users, initCRSQLite } from '../../test.util';
 import type { OporDatabase, LiveResult } from '../../../src/types';
 
 let db: OporDatabase<typeof testSchema>;
 
-beforeAll(() => {
+beforeAll(async () => {
+    await initCRSQLite();
     const dom = new JSDOM();
     global.window = dom.window as any;
     global.document = dom.window.document;
@@ -75,7 +76,6 @@ describe('React useLiveQuery Hook', () => {
         const query = db.liveQuery(() => db.select().from(users));
         const queryFactory = () => query;
         
-        const internalQuery = (query as any).internalQuery;
         // The internal query object is not exposed, so we can't directly inspect subscribers.
         // However, we can trust that `useSyncExternalStore` correctly calls the returned
         // unsubscribe function, which is tested at the unit level.
@@ -86,10 +86,13 @@ describe('React useLiveQuery Hook', () => {
     });
 
     it('should memoize the query instance to prevent re-creation on every render', async () => {
-        const factorySpy = bun.spy(() => db.liveQuery(() => db.select().from(users)));
+        const factory = {
+            create: () => db.liveQuery(() => db.select().from(users))
+        }
+        const factorySpy = spyOn(factory, "create");
         
         const MemoComponent = () => {
-            const queryFactory = useCallback(() => factorySpy(), []);
+            const queryFactory = useCallback(() => factory.create(), []);
             return <TestComponent queryFactory={queryFactory} />;
         };
         

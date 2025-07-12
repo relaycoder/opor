@@ -1,7 +1,11 @@
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect, beforeAll } from 'bun:test';
 import { createLiveDB } from '../../../src/driver';
-import { createTestDB, testSchema } from '../../test.util';
+import { createTestDB, testSchema, initCRSQLite } from '../../test.util';
 import type { DB } from '@vlcn.io/crsqlite-wasm';
+
+beforeAll(async () => {
+    await initCRSQLite();
+});
 
 describe('createLiveDB', () => {
   it('should return an object that combines the Drizzle DB instance and opor-specific methods', async () => {
@@ -36,11 +40,8 @@ describe('createLiveDB', () => {
   });
 
   it('should throw an error if not provided a valid CR-SQLite database instance', () => {
-    // @ts-expect-error - Testing invalid input
-    expect(() => createLiveDB(null)).toThrow();
-    // @ts-expect-error - Testing invalid input
-    expect(() => createLiveDB(undefined)).toThrow();
-    // @ts-expect-error - Testing invalid input
+    expect(() => createLiveDB(null as any)).toThrow();
+    expect(() => createLiveDB(undefined as any)).toThrow();
     expect(() => createLiveDB({} as DB)).toThrow();
   });
 

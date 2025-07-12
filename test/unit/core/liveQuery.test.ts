@@ -1,10 +1,14 @@
-import { describe, it, expect, beforeEach } from 'bun:test';
-import { createTestDB, testSchema, users, posts, waitFor } from '../../test.util';
+import { describe, it, expect, beforeEach, beforeAll } from 'bun:test';
+import { createTestDB, testSchema, users, posts, waitFor, initCRSQLite } from '../../test.util';
 import type { OporDatabase } from '../../../src/types';
 import { eq } from 'drizzle-orm';
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 let db: OporDatabase<typeof testSchema>;
+
+beforeAll(async () => {
+    await initCRSQLite();
+});
 
 beforeEach(async () => {
   db = await createTestDB();

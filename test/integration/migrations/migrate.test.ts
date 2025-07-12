@@ -1,11 +1,15 @@
-import { describe, it, expect, afterEach } from 'bun:test';
-import { createTestDB } from '../../test.util';
+import { describe, it, expect, afterEach, beforeAll } from 'bun:test';
+import { createTestDB, initCRSQLite } from '../../test.util';
 import type { OporDatabase } from '../../../src/types';
 import { migrate } from '../../../src/migrator';
 import type { MigrationMeta } from 'drizzle-orm/migrator';
 import { sql } from 'drizzle-orm';
 
 let db: OporDatabase<any>;
+
+beforeAll(async () => {
+    await initCRSQLite();
+});
 
 afterEach(async () => {
     if (db) {
@@ -21,11 +25,13 @@ const MIGRATIONS: MigrationMeta[] = [
         ],
         folderMillis: 1700000000000,
         hash: 'hash1',
+        bps: false,
     },
     {
         sql: ["ALTER TABLE `orders` ADD COLUMN `quantity` integer DEFAULT 1;"],
         folderMillis: 1700000000001,
         hash: 'hash2',
+        bps: false,
     }
 ];
 
@@ -47,7 +53,7 @@ describe('Migrations', () => {
     it('should apply pending migrations to an existing database', async () => {
         db = await createTestDB({ createSchema: false });
         
-        await migrate(db, { migrations: [MIGRATIONS[0]] });
+        await migrate(db, { migrations: [MIGRATIONS[0]!] });
         let appliedMigrations = await db.all(sql`SELECT * FROM __drizzle_migrations`);
         expect(appliedMigrations.length).toBe(1);
 

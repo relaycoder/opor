@@ -1,16 +1,22 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'bun:test';
-import { createTestDB, testSchema, users, waitFor } from '../../test.util';
+import { createTestDB, testSchema, users, waitFor, initCRSQLite } from '../../test.util';
 import type { OporDatabase } from '../../../src/types';
-import type { ServerWebSocket } from 'bun';
+import type { Server, ServerWebSocket } from 'bun';
+import { eq } from 'drizzle-orm';
 
 const PORT = 8001;
 const ENDPOINT = `ws://localhost:${PORT}`;
 
-let server: ReturnType<typeof Bun.serve>;
-const allSockets = new Map<string, Set<ServerWebSocket>>();
+type WebSocketData = {
+    dbName: string;
+};
 
-beforeAll(() => {
-    server = Bun.serve({
+let server: Server;
+const allSockets = new Map<string, Set<ServerWebSocket<WebSocketData>>>();
+
+beforeAll(async () => {
+    await initCRSQLite();
+    server = Bun.serve<WebSocketData, void>({
         port: PORT,
         fetch(req, server) {
             const url = new URL(req.url);
@@ -70,7 +76,7 @@ describe('Live Sync', () => {
         await clientA.insert(users).values({ id: '1', name: 'Live Alice', email: 'la@la.com' });
 
         await waitFor(queryB, d => d?.length === 1);
-        expect(queryB.data?.[0].name).toBe('Live Alice');
+        expect(queryB.data![0]!.name).toBe('Live Alice');
     });
     
     it('should sync an update from client A to client B', async () => {
@@ -78,12 +84,12 @@ describe('Live Sync', () => {
         await Promise.all([ clientA.sync(syncOptions), clientB.sync(syncOptions) ]);
         
         await clientA.insert(users).values({ id: 'u1', name: 'Update-Me', email: 'u@u.com' });
-        const queryB = clientB.liveQuery(db => db.select().from(users).where({id: 'u1'}));
+        const queryB = clientB.liveQuery(db => db.select().from(users).where(eq(users.id, 'u1')));
         await waitFor(queryB, d => d?.[0]?.name === 'Update-Me');
         
-        await clientA.update(users).set({ name: 'Updated' }).where({ id: 'u1' });
+        await clientA.update(users).set({ name: 'Updated' }).where(eq(users.id, 'u1'));
         await waitFor(queryB, d => d?.[0]?.name === 'Updated');
-        expect(queryB.data?.[0].name).toBe('Updated');
+        expect(queryB.data![0]!.name).toBe('Updated');
     });
 
     it('should sync a delete from client A to client B', async () => {
@@ -94,7 +100,7 @@ describe('Live Sync', () => {
         const queryB = clientB.liveQuery(db => db.select().from(users));
         await waitFor(queryB, d => d?.length === 1);
 
-        await clientA.delete(users).where({ id: 'd1' });
+        await clientA.delete(users).where(eq(users.id, 'd1'));
         await waitFor(queryB, d => d?.length === 0);
         expect(queryB.data).toEqual([]);
     });
@@ -108,6 +114,6 @@ describe('Live Sync', () => {
 
         const queryB = clientB.liveQuery(db => db.select().from(users));
         await waitFor(queryB, d => d?.length === 1);
-        expect(queryB.data?.[0].name).toBe('Offline');
+        expect(queryB.data![0]!.name).toBe('Offline');
     });
 });

@@ -3,8 +3,13 @@ import { sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { createLiveDB } from "../src/driver";
 import type { LiveResult, OporDatabase } from "../src/types";
 import CRSQLite from '@vlcn.io/crsqlite-wasm';
+import type { DB } from "@vlcn.io/crsqlite-wasm";
 
-const CRSQLiteModule = await CRSQLite();
+export let CRSQLiteModule: any;
+export async function initCRSQLite() {
+    // @ts-ignore
+    CRSQLiteModule = await CRSQLite();
+}
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),

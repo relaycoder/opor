@@ -1,9 +1,14 @@
-import { describe, it, expect, beforeEach } from 'bun:test';
-import { createTestDB, testSchema, users, waitFor } from '../../test.util';
+import { describe, it, expect, beforeEach, beforeAll } from 'bun:test';
+import { createTestDB, testSchema, users, waitFor, initCRSQLite } from '../../test.util';
 import type { OporDatabase } from '../../../src/types';
+import { eq } from 'drizzle-orm';
 
 let clientA: OporDatabase<typeof testSchema>;
 let clientB: OporDatabase<typeof testSchema>;
+
+beforeAll(async () => {
+    await initCRSQLite();
+});
 
 beforeEach(async () => {
   clientA = await createTestDB({ dbName: 'clientA.db' });
@@ -16,9 +21,9 @@ describe('Snapshot Sync Workflow', () => {
     const changeset = await clientA.getChangeset();
     await clientB.applyChangeset(changeset);
     
-    const aliceOnB = await clientB.select().from(users).where({ id: '1' });
+    const aliceOnB = await clientB.select().from(users).where(eq(users.id, '1'));
     expect(aliceOnB.length).toBe(1);
-    expect(aliceOnB[0].name).toBe('Alice');
+    expect(aliceOnB[0]!.name).toBe('Alice');
   });
 
   it('should correctly update a liveQuery on the receiving client after applyChangeset is called', async () => {
@@ -32,7 +37,7 @@ describe('Snapshot Sync Workflow', () => {
     await clientB.applyChangeset(changeset);
     
     await waitFor(queryB, d => d?.length === 1);
-    expect(queryB.data?.[0].name).toBe('Alice');
+    expect(queryB.data![0]!.name).toBe('Alice');
   });
 
   it('should handle multiple rounds of changeset application correctly', async () => {
@@ -63,6 +68,6 @@ describe('Snapshot Sync Workflow', () => {
     await clientB.applyChangeset(changeset);
     usersOnB = await clientB.select().from(users).orderBy(users.name);
     expect(usersOnB.length).toBe(2);
-    expect(usersOnB[0].name).toBe('Alice');
+    expect(usersOnB[0]!.name).toBe('Alice');
   });
 });
